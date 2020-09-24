@@ -1,26 +1,24 @@
 // learnopengl.com used as a resource. I don't feel too bad about copying from it because the point here is simply to make filters work on shaders not to learn opengl
 //
 #include <iostream>
+#include <chrono>
+#include <ctime>
+#include <map>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include "shader.h"
+#include "stb_image.h"
+
+#define WIDTH 1920
+#define HEIGHT 1080
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
-
-const char *vertexShaderSource = "#version 460 core\n"
-                                 "layout (location = 0) in vec3 aPos;\n"
-                                 "void main()\n"
-                                 "{\n"
-                                 "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-                                 "}\0";
-
-const char *fragmentShaderSource = "#version 460 core\n"
-                                   "out vec4 FragColor;\n "
-                                   "void main()\n "
-                                   "{\n"
-                                   "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-                                   "}\0";
 
 int main()
 {
@@ -29,7 +27,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow *window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -44,38 +42,23 @@ int main()
         return -1;
     }
 
-    glViewport(0, 0, 800, 600);
+    glViewport(0, 0, WIDTH, HEIGHT);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    unsigned int vertexShader;
-    vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
+    Shader horizontalShader("src/hshader.vs", "src/hshader.fs");
 
-    unsigned int fragmentShader;
-    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    // linked version of combined shaders
-    unsigned int shaderProgram;
-    shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+    float texW = 1200.0 / WIDTH;
+    float texH = 800.0 / HEIGHT;
 
     float vertices[] = {
-        0.5f, 0.5f, 0.0f,   // top right
-        0.5f, -0.5f, 0.0f,  // bottom right
-        -0.5f, -0.5f, 0.0f, // bottom left
-        -0.5f, 0.5f, 0.0f   // top left
+        // positions          // colors           // texture coords
+        texW, texH, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,   // top right
+        texW, -texH, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,  // bottom right
+        -texW, -texH, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, // bottom left
+        -texW, texH, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f   // top left
     };
 
     unsigned int indices[] = {
-        // note that we start from 0! (i think these are clockwise)
         0, 1, 3, // first triangle
         1, 2, 3  // second triangle
     };
@@ -88,18 +71,56 @@ int main()
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); // might want to change to dynamic draw?
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW); // might want to change to dynamic draw?
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+    // pos
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
+    // color
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    // tex
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float))); // index, size, type, normalized, stride size, offset of first component
+    glEnableVertexAttribArray(2);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture); // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
 
-    glBindVertexArray(0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // clamp to edge is like edge padding
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load("../draken.jpg", &width, &height, &nrChannels, 0);
+
+    if (data)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        std::cout << "Failed to load texture" << std::endl;
+    }
+    stbi_image_free(data);
+
+    // glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
+    // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
+
+    // glBindVertexArray(0);
+
+    float t = 0.;
+    uint32_t count = 0;
+    glm::vec3 pos = glm::vec3(0.00, 0., 0.0);
+    float theta = 0;
+    float velocity = 0.001;
     while (!glfwWindowShouldClose(window))
     {
         processInput(window);
@@ -107,19 +128,63 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glUseProgram(shaderProgram);
+        auto start = std::chrono::system_clock::now();
+
+        glBindTexture(GL_TEXTURE_2D, texture);
+
+        glm::mat4 transform = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
+        pos.x += velocity * glm::cos(theta);
+        pos.y += velocity * glm::sin(theta);
+        if (pos.y > 1)
+        {
+            pos.y = -1;
+        }
+        else if (pos.y < -1)
+        {
+            pos.y = 1;
+        }
+        if (pos.x > 1)
+        {
+            pos.x = -1;
+        }
+        else if (pos.x < -1)
+        {
+            pos.x = 1;
+        }
+        // theta += 0.001;
+        transform = glm::translate(transform, pos);
+        transform = glm::rotate(transform, theta, glm::vec3(1.0f, 1.0f, 0.0f));
+
+        // get matrix's uniform location and set matrix
+        horizontalShader.use();
+        unsigned int transformLoc = glGetUniformLocation(horizontalShader.ID, "transform");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
+
+        horizontalShader.use();
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        vertices[0] += 0.01;
 
         glfwSwapBuffers(window);
+
+        auto end = std::chrono::system_clock::now();
+        std::chrono::duration<double> duration = end - start;
+        ++count;
+        t += duration.count();
+        if (count == 1000)
+        {
+            count = 0;
+            std::cout << "compute + draw time for last 1000 frames: " << t / 1000. << std::endl; // this seems really inaccurate -- I guess it only measure cpu time not gpu
+
+            t = 0;
+        }
+
         glfwPollEvents();
     }
 
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
-    glDeleteProgram(shaderProgram);
-
+    // glDeleteBuffers(1, &EBO);
     glfwTerminate();
     return 0;
 }
