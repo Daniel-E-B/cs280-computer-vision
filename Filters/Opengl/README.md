@@ -1,6 +1,6 @@
 # Filters in OpenGL
-## Heavily adapted from learnopengl.com
-## learnopengl.com tutorials used:
+### Heavily adapted from [learnopengl.com](https://learnopengl.com)
+### [learnopengl.com](https://learnopengl.com) tutorials used:
 * Creating a Window
 * Hello Window
 * Hello Triangle
@@ -33,12 +33,14 @@ If g++, libc, libstdc++, libX11, libdl, make are not installed, they will also n
 
 ```$ build/main```
 
-Build instructions for other environments can be found at learnopengl.com/Getting-started/Creating-a-window
-
+Build instructions for other environments can be found at [learnopengl.com/Getting-started/Creating-a-window](https://learnopengl.com/Getting-started/Creating-a-window)
 ## How it works
 
 The core of the program are the two shaders, `src/hshader.fs` and `src/screen.fs`. The former applies an average blur filter horizontally while the latter applies one vertically.
 
 In `src/main.cpp`, a framebuffer is used to run the horizontal shader on the input texture and draw the result to an intermediate texture. The vertical (screen) shader is then run on the intermediate texture and drawn to the screen. Then, some fun transformations are applied.
+<<<<<<< HEAD
 
 By running the shaders with an intermediate texture, the number of samples taken per pixel is reduced from 101^2 to 2*101 which greatly improves speed.
+=======
+>>>>>>> 5cb7e35bf21f0cc3e5b5ef74bf2e208a41dde386
