@@ -192,18 +192,7 @@ int main()
         {
            velocity *= -1;
         }
-        // else if (pos.y  -scaleFactor * drawHeight < -1)
-        // {
-        //      velocity *= -1;
-        // }
-        // if (pos.x + scaleFactor * drawWidth > 1)
-        // {
-        //      velocity *= -1;
-        // }
-        // else if (pos.x  - scaleFactor * drawWidth< -1)
-        // {
-        //      velocity *= -1;
-        // }
+
         theta += 0.001;
         transform = glm::translate(transform, pos);
         transform = glm::rotate(transform, theta, glm::vec3(1.0f, 1.0f, 1.0f));
