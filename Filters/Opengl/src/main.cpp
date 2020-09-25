@@ -45,6 +45,7 @@ int main()
     glViewport(0, 0, WIDTH, HEIGHT);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
+    Shader verticalShader("src/shader.vs", "src/vshader.fs");
     Shader horizontalShader("src/hshader.vs", "src/hshader.fs");
 
     float texW = 1200.0 / WIDTH;
@@ -116,11 +117,13 @@ int main()
 
     // glBindVertexArray(0);
 
+
+
     float t = 0.;
     uint32_t count = 0;
     glm::vec3 pos = glm::vec3(0.00, 0., 0.0);
     float theta = 0;
-    float velocity = 0.001;
+    float velocity = 0.00;
     while (!glfwWindowShouldClose(window))
     {
         processInput(window);
@@ -129,6 +132,7 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         auto start = std::chrono::system_clock::now();
+
 
         glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -157,10 +161,10 @@ int main()
 
         // get matrix's uniform location and set matrix
         horizontalShader.use();
+        verticalShader.use();
         unsigned int transformLoc = glGetUniformLocation(horizontalShader.ID, "transform");
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
 
-        horizontalShader.use();
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         vertices[0] += 0.01;
