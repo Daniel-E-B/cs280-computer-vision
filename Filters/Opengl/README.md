@@ -1,6 +1,6 @@
 # Filters in OpenGL
-## Heavily adapted from learnopengl.com
-## learnopengl.com tutorials used:
+### Heavily adapted from [learnopengl.com](https://learnopengl.com)
+### [learnopengl.com](https://learnopengl.com) tutorials used:
 * Creating a Window
 * Hello Window
 * Hello Triangle
@@ -33,8 +33,7 @@ If g++, libc, libstdc++, libX11, libdl, make are not installed, they will also n
 
 ```$ build/main```
 
-Build instructions for other environments can be found at learnopengl.com/Getting-started/Creating-a-window
-
+Build instructions for other environments can be found at [learnopengl.com/Getting-started/Creating-a-window](https://learnopengl.com/Getting-started/Creating-a-window)
 ## How it works
 
 The core of the program are the two shaders, `src/hshader.fs` and `src/screen.fs`. The former applies an average blur filter horizontally while the latter applies one vertically.
