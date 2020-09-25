@@ -14,8 +14,8 @@
 #include "shader.h"
 #include "stb_image.h"
 
-#define WIDTH 1920
-#define HEIGHT 1080
+#define WIDTH 1200
+#define HEIGHT 800
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -51,11 +51,11 @@ int main()
 
     unsigned int texture = loadTexture("../draken.jpg");
 
-    horizontalShader.use();
-    horizontalShader.setInt("ourTexture", 0);
+    // horizontalShader.use();
+    // horizontalShader.setInt("ourTexture", 0);
 
-    verticalShader.use();
-    verticalShader.setInt("screenTexture", 0);
+    // verticalShader.use();
+    // verticalShader.setInt("screenTexture", 0);
 
     float texW = 1200.0 / WIDTH;
     float texH = 800.0 / HEIGHT;
