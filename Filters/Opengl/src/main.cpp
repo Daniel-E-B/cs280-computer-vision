@@ -146,9 +146,11 @@ int main()
     uint32_t count = 0;
     glm::vec3 pos = glm::vec3(0.00, 0., 0.0);
     float theta = 0;
-    float velocity = 0.00;
+    float velocity = 0.001;
     while (!glfwWindowShouldClose(window))
     {
+        auto start = std::chrono::system_clock::now();
+
         processInput(window);
 
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
@@ -169,66 +171,65 @@ int main()
         glActiveTexture(GL_TEXTURE0);
         glBindVertexArray(quadVAO);
         glBindTexture(GL_TEXTURE_2D, textureColorbuffer); // if i do texture here and element draw, it works.
+
+        glm::mat4 transform = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
+        pos.x += velocity * glm::cos(theta);
+        pos.y += velocity * glm::sin(theta);
+        if (pos.y > 1)
+        {
+            pos.y = -1;
+        }
+        else if (pos.y < -1)
+        {
+            pos.y = 1;
+        }
+        if (pos.x > 1)
+        {
+            pos.x = -1;
+        }
+        else if (pos.x < -1)
+        {
+            pos.x = 1;
+        }
+        theta += 0.001;
+        transform = glm::translate(transform, pos);
+        transform = glm::rotate(transform, theta, glm::vec3(1.0f, 1.0f, 0.0f));
+        transform = glm::scale(transform, glm::vec3(0.25, 0.25, 0.25));
+        unsigned int transformLoc = glGetUniformLocation(verticalShader.ID, "transform");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
+
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        // auto start = std::chrono::system_clock::now();
-
-        // glBindTexture(GL_TEXTURE_2D, texture);
-
-        // glm::mat4 transform = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-        // pos.x += velocity * glm::cos(theta);
-        // pos.y += velocity * glm::sin(theta);
-        // if (pos.y > 1)
-        // {
-        //     pos.y = -1;
-        // }
-        // else if (pos.y < -1)
-        // {
-        //     pos.y = 1;
-        // }
-        // if (pos.x > 1)
-        // {
-        //     pos.x = -1;
-        // }
-        // else if (pos.x < -1)
-        // {
-        //     pos.x = 1;
-        // }
-        // // theta += 0.001;
-        // transform = glm::translate(transform, pos);
-        // transform = glm::rotate(transform, theta, glm::vec3(1.0f, 1.0f, 0.0f));
-
-        // // get matrix's uniform location and set matrix
-        // horizontalShader.use();
-        // unsigned int transformLoc = glGetUniformLocation(horizontalShader.ID, "transform");
-        // glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
-
-        // glBindVertexArray(VAO);
-        // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        // vertices[0] += 0.01;
+        // glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        // glClearColor(0.0f, 0.0f, 1.0f, 1.0f); // we never see this
+        // glClear(GL_COLOR_BUFFER_BIT);
+        // verticalShader.use();
+        // glActiveTexture(GL_TEXTURE0);
+        // glBindVertexArray(quadVAO);
+        // glBindTexture(GL_TEXTURE_2D, texture); // if i do texture here and element draw, it works.
+        // glDrawArrays(GL_TRIANGLES, 0, 6);
 
         glfwSwapBuffers(window);
-
-        // auto end = std::chrono::system_clock::now();
-        // std::chrono::duration<double> duration = end - start;
-        // ++count;
-        // t += duration.count();
-        // if (count == 1000)
-        // {
-        //     count = 0;
-        //     std::cout << "avg compute + draw time for last 1000 frames: " << t / 1000. << std::endl; // this seems really inaccurate -- I guess it only measure cpu time not gpu
-
-        //     t = 0;
-        // }
-
         glfwPollEvents();
+
+        auto end = std::chrono::system_clock::now();
+        std::chrono::duration<double> duration = end - start;
+        ++count;
+        t += duration.count();
+        if (count == 1000)
+        {
+            count = 0;
+            std::cout << "avg compute + draw time for last 1000 frames: " << t / 1000. << std::endl; // this seems really inaccurate -- I guess it only measure cpu time not gpu
+
+            t = 0;
+        }
     }
 
     glDeleteVertexArrays(1, &VAO);
     glDeleteVertexArrays(1, &quadVAO);
     glDeleteBuffers(1, &quadVBO);
     glDeleteBuffers(1, &VBO);
-    // glDeleteBuffers(1, &EBO);
+    glDeleteBuffers(1, &EBO);
     glfwTerminate();
     return 0;
 }
