@@ -46,17 +46,16 @@ int main()
     glViewport(0, 0, WIDTH, HEIGHT);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    Shader verticalShader("src/shader.vs", "src/vshader.fs");
     Shader horizontalShader("src/shader.vs", "src/hshader.fs");
-    Shader screenShader("src/screen.vs", "src/screen.fs");
+    Shader verticalShader("src/screen.vs", "src/screen.fs");
 
     unsigned int texture = loadTexture("../draken.jpg");
 
     horizontalShader.use();
     horizontalShader.setInt("ourTexture", 0);
 
-    screenShader.use();
-    screenShader.setInt("screenTexture", 0);
+    verticalShader.use();
+    verticalShader.setInt("screenTexture", 0);
 
     float texW = 1200.0 / WIDTH;
     float texH = 800.0 / HEIGHT;
@@ -131,18 +130,10 @@ int main()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
 
-    // create a renderbuffer object for depth and stencil attachment (we won't be sampling these)
-    unsigned int rbo;
-    glGenRenderbuffers(1, &rbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WIDTH, HEIGHT);                   // use a single renderbuffer object for both a depth AND stencil buffer.
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo); // now actually attach it
-    // now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -171,18 +162,14 @@ int main()
         glBindTexture(GL_TEXTURE_2D, texture);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-
-        
-
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClearColor(0.0f, 0.0f, 1.0f, 1.0f); // we never see this
         glClear(GL_COLOR_BUFFER_BIT);
-        // verticalShader.use();
-        screenShader.use();
+        verticalShader.use();
+        glActiveTexture(GL_TEXTURE0);
         glBindVertexArray(quadVAO);
         glBindTexture(GL_TEXTURE_2D, textureColorbuffer); // if i do texture here and element draw, it works.
         glDrawArrays(GL_TRIANGLES, 0, 6);
-        // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         // auto start = std::chrono::system_clock::now();
 
@@ -213,7 +200,6 @@ int main()
 
         // // get matrix's uniform location and set matrix
         // horizontalShader.use();
-        // verticalShader.use();
         // unsigned int transformLoc = glGetUniformLocation(horizontalShader.ID, "transform");
         // glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
 
