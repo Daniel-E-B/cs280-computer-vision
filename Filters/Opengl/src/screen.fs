@@ -14,6 +14,7 @@ void main()
         texcolor += texture(screenTexture, samplepos) * 1.0/101.0;
     }
     FragColor = texcolor;
+    // FragColor = texture(screenTexture, TexCoords);
 }
 
 // #version 460 core
@@ -34,7 +35,7 @@ void main()
 //     texcolor -= texture(screenTexture, vec2(TexCoords.x + 1/texWidth, TexCoords.y - 1/texHeight));
 
 
-//     texcolor += texture(screenTexture, vec2(TexCoords.x - 1/texWidth, TexCoords.y));
+//     texcolor += 2*texture(screenTexture, vec2(TexCoords.x - 1/texWidth, TexCoords.y));
 
 //     texcolor -= 2*texture(screenTexture, vec2(TexCoords.x + 1/texWidth, TexCoords.y));
 

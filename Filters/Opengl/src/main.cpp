@@ -14,12 +14,17 @@
 #include "shader.h"
 #include "stb_image.h"
 
-#define WIDTH 1200
-#define HEIGHT 800
+float WIDTH = 1920;  //1200
+float HEIGHT = 1080; //800
+
+#define TEX_W 1200
+#define TEX_H 799
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
 unsigned int loadTexture(const char *path);
+
+unsigned int textureColorbuffer;
 
 int main()
 {
@@ -57,8 +62,10 @@ int main()
     // verticalShader.use();
     // verticalShader.setInt("screenTexture", 0);
 
-    float texW = 1200.0 / WIDTH;
-    float texH = 800.0 / HEIGHT;
+    // float texW = (float)TEX_W / WIDTH;
+    // float texH = (float)TEX_H / HEIGHT;
+    float texW = 1.;
+    float texH = 1.;
 
     float vertices[] = {
         // positions          // colors           // texture coords
@@ -122,7 +129,6 @@ int main()
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     // create a color attachment texture
-    unsigned int textureColorbuffer;
     glGenTextures(1, &textureColorbuffer);
     glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
@@ -142,20 +148,27 @@ int main()
 
     // glBindVertexArray(0);
 
-    float t = 0.;
     uint32_t count = 0;
-    glm::vec3 pos = glm::vec3(0.00, 0., 0.0);
+    std::chrono::system_clock::time_point lastFrameTime;
+    glm::vec3 pos = glm::vec3(0., 0., 0.);
     float theta = 0;
     float velocity = 0.001;
+    float drawWidth = TEX_W / WIDTH;
+    float drawHeight = TEX_H / HEIGHT;
+    float scaleFactor = 0.3;
+    float scaledHeight = scaleFactor * drawHeight;
+    float scaledWidth = scaleFactor * drawWidth;
     while (!glfwWindowShouldClose(window))
     {
-        auto start = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed = std::chrono::system_clock::now() - lastFrameTime;
+        std::cout << "FPS: " << 1.0 / elapsed.count() << ",     frame time: " << elapsed.count() << std::endl;
+        lastFrameTime = std::chrono::system_clock::now();
 
         processInput(window);
 
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
-        glClearColor(0.2f, 1.0f, 1.0f, 1.0f); // we see this
+        glClearColor(0.0f, 1.0f, 1.0f, 1.0f); // we see this
         glClear(GL_COLOR_BUFFER_BIT);
 
         horizontalShader.use(); // we see this
@@ -175,26 +188,26 @@ int main()
         glm::mat4 transform = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
         pos.x += velocity * glm::cos(theta);
         pos.y += velocity * glm::sin(theta);
-        if (pos.y > 1)
+        if (pos.y + scaledHeight > 1 || pos.y - scaledHeight < -1 || pos.x + scaledWidth > 1 || pos.x - scaledWidth < -1)
         {
-            pos.y = -1;
+           velocity *= -1;
         }
-        else if (pos.y < -1)
-        {
-            pos.y = 1;
-        }
-        if (pos.x > 1)
-        {
-            pos.x = -1;
-        }
-        else if (pos.x < -1)
-        {
-            pos.x = 1;
-        }
+        // else if (pos.y  -scaleFactor * drawHeight < -1)
+        // {
+        //      velocity *= -1;
+        // }
+        // if (pos.x + scaleFactor * drawWidth > 1)
+        // {
+        //      velocity *= -1;
+        // }
+        // else if (pos.x  - scaleFactor * drawWidth< -1)
+        // {
+        //      velocity *= -1;
+        // }
         theta += 0.001;
         transform = glm::translate(transform, pos);
-        transform = glm::rotate(transform, theta, glm::vec3(1.0f, 1.0f, 0.0f));
-        transform = glm::scale(transform, glm::vec3(0.25, 0.25, 0.25));
+        transform = glm::rotate(transform, theta, glm::vec3(1.0f, 1.0f, 1.0f));
+        transform = glm::scale(transform, glm::vec3(scaledWidth, scaledHeight, 1.0));
         unsigned int transformLoc = glGetUniformLocation(verticalShader.ID, "transform");
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
 
@@ -207,22 +220,13 @@ int main()
         // glActiveTexture(GL_TEXTURE0);
         // glBindVertexArray(quadVAO);
         // glBindTexture(GL_TEXTURE_2D, texture); // if i do texture here and element draw, it works.
+        // glm::mat4 transform = glm::mat4(1.0f);
+        // unsigned int transformLoc = glGetUniformLocation(verticalShader.ID, "transform");
+        // glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
         // glDrawArrays(GL_TRIANGLES, 0, 6);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
-
-        auto end = std::chrono::system_clock::now();
-        std::chrono::duration<double> duration = end - start;
-        ++count;
-        t += duration.count();
-        if (count == 1000)
-        {
-            count = 0;
-            std::cout << "avg compute + draw time for last 1000 frames: " << t / 1000. << std::endl; // this seems really inaccurate -- I guess it only measure cpu time not gpu
-
-            t = 0;
-        }
     }
 
     glDeleteVertexArrays(1, &VAO);
@@ -237,6 +241,10 @@ int main()
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
     glViewport(0, 0, width, height);
+    WIDTH = width;
+    HEIGHT = height;
+    glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 }
 
 void processInput(GLFWwindow *window)

@@ -53,7 +53,12 @@
         "streambuf": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "bit": "cpp"
+        "bit": "cpp",
+        "condition_variable": "cpp",
+        "map": "cpp",
+        "set": "cpp",
+        "mutex": "cpp",
+        "thread": "cpp"
     },
     "C_Cpp.default.includePath": ["$(default)", "/usr/include/freetype2", "${workspaceFolder}/include", "${workspaceFolder}/src"],
     "C_Cpp.default.cppStandard": "c++20"
